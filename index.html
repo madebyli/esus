@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESUS Analyzer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>ESUS Analyzer</h1>
+
+  <div class="container">
+    <!-- Left panel: Calculator -->
+    <div class="panel left">
+      <p><b>Step 1:</b> Copy participant responses (5 columns per row) directly from Excel.<br>
+         <b>Step 2:</b> Paste into the box below and click <b>Analyze Data</b>.</p>
+
+      <textarea id="pasteArea" placeholder="Example:
+2 - Very good	4 - Excellent	3 - Neutral	5 - Outstanding	1 - Poor"></textarea>
+      <button onclick="analyzeData()">Analyze Data</button>
+    </div>
+
+    <!-- Right panel: Results -->
+    <div class="panel right">
+      <table id="esusTable" style="display:none;">
+        <thead>
+          <tr>
+            <th>Participant</th>
+            <th>Q1</th>
+            <th>Q2</th>
+            <th>Q3</th>
+            <th>Q4</th>
+            <th>Q5</th>
+            <th>Raw Score</th>
+            <th>ESUS Score</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="result"></div>
+
+      <!-- 🎉 Dancing Corgi -->
+      <div id="corgiDance" style="display:none;">
+        <img src="https://media.giphy.com/media/ICOgUNjpvO0PC/giphy.gif" alt="Dancing Corgi" />
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function analyzeData() {
+      const text = document.getElementById("pasteArea").value.trim();
+      const table = document.getElementById("esusTable");
+      const tbody = table.querySelector("tbody");
+
+      if (!text) {
+        alert("Please paste participant responses first.");
+        return;
+      }
+
+      tbody.innerHTML = ""; // Clear table
+
+      const rows = text.split(/\r?\n/);
+
+      let totalESUS = 0, count = 0;
+
+      rows.forEach((line, i) => {
+        let values = line.split(/\t|,|\s{2,}/).map(v => v.trim()).filter(v => v !== "");
+
+        if (values.length >= 5) {
+          const scores = values.slice(0, 5).map(v => {
+            const match = v.match(/^\d+/);
+            return match ? parseInt(match[0], 10) : NaN;
+          });
+
+          if (scores.some(v => isNaN(v) || v < 1 || v > 5)) return;
+
+          const raw = scores.reduce((a, b) => a + b, 0);
+          const esus = ((raw - 5) / 20) * 100;
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${i + 1}</td>
+            ${scores.map(s => `<td>${s}</td>`).join("")}
+            <td>${raw}</td>
+            <td>${esus.toFixed(2)}</td>
+          `;
+          tbody.appendChild(tr);
+
+          totalESUS += esus;
+          count++;
+        }
+      });
+
+      table.style.display = "table";
+
+      if (count > 0) {
+        document.getElementById("result").innerText =
+          `Average ESUS Score across ${count} participants: ${(totalESUS / count).toFixed(2)}`;
+        document.getElementById("corgiDance").style.display = "block"; // 🎉 Show corgi
+      } else {
+        document.getElementById("result").innerText = "No valid data found.";
+        document.getElementById("corgiDance").style.display = "none"; // Hide corgi
+      }
+    }
+  </script>
+</body>
+</html>
